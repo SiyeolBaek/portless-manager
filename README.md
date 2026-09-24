@@ -20,7 +20,7 @@ See every portless project on your machine grouped by folder, and start, stop, o
 - **Start / stop / restart.** Starts are detached from the menu bar. Stops terminate the whole
   process tree so `next dev` doesn't linger on a port.
 - **Clickable notifications.** When a service is actually ready to serve, you get a notification
-  that opens its page when clicked. If it fails to start, clicking the notification opens the log.
+  that opens its page when clicked. If it fails to start, the notification points you to **View log**.
 - **Shortcuts.** Open the page, copy the URL, open the folder in your editor, terminal, or Finder,
   and view the service log.
 - **Multilingual.** English and Korean, picked from your macOS language. Adding a language is one JSON file.
@@ -128,7 +128,7 @@ Pull requests with new languages are welcome.
 |---|---|
 | Status | Matches each project's computed hostname against live entries in `~/.portless/routes.json` (`{hostname, port, pid}`). `portless list` has no JSON output, so it reads the file directly. |
 | Start | Runs bare `portless` in the project folder, in a new session so it outlives SwiftBar. Output goes to `~/Library/Logs/portless-manager/<name>.log`. |
-| Ready notification | A detached watcher waits up to 60 seconds for the route's port to accept connections (portless registers the route before the app listens). It then posts a SwiftBar notification (`swiftbar://notify`) that opens the page when clicked. If the launch dies first, the notification opens the log instead. Stop and other actions post notifications with no click action. |
+| Ready notification | A detached watcher waits up to 60 seconds for the route's port to accept connections (portless registers the route before the app listens). It then posts a SwiftBar notification (`swiftbar://notify`) that opens the page when clicked. If the launch dies first, it posts a failure notification without a click action: SwiftBar only opens web links from notifications, so a `file://` link to the log would do nothing. Stop and other actions also have no click action. |
 | Stop | Sends SIGTERM to the route's pid (the portless CLI), which shuts the app down and removes the route. If it's still alive after 8 seconds, it SIGKILLs the child process groups too. |
 | Stop all | Stops every live route, including ones outside your configured roots. |
 

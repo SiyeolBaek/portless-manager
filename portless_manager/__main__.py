@@ -59,7 +59,9 @@ def watch(t: Target, title: str) -> None:
     if outcome == rt.CANCELLED:
         return
     if outcome == rt.FAILED_EARLY:
-        notify(("result.start_failed", {"name": t.name}), title, href=rt.log_file(t).as_uri())
+        # No href: SwiftBar 2.1.1 only opens web links from notifications. A file:// log link
+        # just activates SwiftBar and shows its "already running" dialog.
+        notify(("result.start_failed", {"name": t.name}), title)
         return
     link = rt.url(route.hostname if route else rt.hostnames(t)[0])
     key = "result.ready" if outcome == rt.READY else "result.still_starting"

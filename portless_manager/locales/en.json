@@ -35,7 +35,7 @@
   "result.started": "Started {name}",
   "result.ready": "{name} is ready — click to open",
   "result.still_starting": "{name} is still starting — click to open",
-  "result.start_failed": "{name} failed to start — click to view the log",
+  "result.start_failed": "{name} failed to start — see “View log” in the menu",
   "result.stopped": "Stopped {name}",
   "result.stop_failed": "Couldn't stop {name} (permission?)",
   "result.stopped_all": "Stopped {ok} of {total}",

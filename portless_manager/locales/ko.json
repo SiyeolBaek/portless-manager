@@ -35,7 +35,7 @@
   "result.started": "시작: {name}",
   "result.ready": "{name} 준비됨 — 클릭하면 열립니다",
   "result.still_starting": "{name} 아직 시작 중 — 클릭하면 열립니다",
-  "result.start_failed": "{name} 시작 실패 — 클릭하면 로그를 엽니다",
+  "result.start_failed": "{name} 시작 실패 — 메뉴의 「로그 보기」를 확인하세요",
   "result.stopped": "종료: {name}",
   "result.stop_failed": "종료 실패: {name} (권한?)",
   "result.stopped_all": "{ok}/{total}개 종료",
