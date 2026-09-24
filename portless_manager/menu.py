@@ -1,4 +1,4 @@
-"""SwiftBar 메뉴 출력. 클릭은 전부 설치된 래퍼(`portless-manager.10s.sh <명령> …`)로 돌아온다."""
+"""SwiftBar menu output. Every click comes back through the installed wrapper (`portless-manager.10s.sh <command> …`)."""
 from __future__ import annotations
 
 import time
@@ -51,12 +51,12 @@ class Menu:
         return f"bash={_q(self.wrapper)} {ps} terminal=false refresh=true"
 
     def group(self, depth: int, text: str, color: str = TEXT) -> None:
-        """하위메뉴 부모에는 항상 color 를 단다. SwiftBar 2.1.1 은 파라미터 없는 하위메뉴 부모의
-        동작을 AppKit 에 맡기는데, 새로고침으로 제목이 바뀐 부모는 비활성으로 남아 안의 항목을
-        누를 수 없게 된다. `color` 가 있는 줄은 SwiftBar 가 직접 동작을 달아 이 경로를 피한다."""
+        """Always give a submenu parent a color. SwiftBar 2.1.1 leaves parameterless submenu parents
+        to AppKit, and a parent whose title changes on refresh stays disabled, so its items can't be
+        clicked. SwiftBar attaches its own action to a line with `color`, which avoids that path."""
         self.add(depth, text, f"color={color}")
 
-    # ── 대상 하나 ────────────────────────────────────────────────────────
+    # ── One target ───────────────────────────────────────────────────────
     def target_items(self, d: int, t: Target, st: rt.Status) -> None:
         host = st.route.hostname if st.route else rt.hostnames(t)[0]
         link = rt.url(host, self.px)
@@ -115,7 +115,7 @@ class Menu:
                 self.group(1, wl)
                 self.target_items(2, w, ws)
 
-    # ── 전체 ──────────────────────────────────────────────────────────────
+    # ── Whole menu ────────────────────────────────────────────────────────
     def render(self, projects: list[Project]) -> str:
         running = sum(1 for r in self.live if not r.static)
         title = f"{running}" if running else ""

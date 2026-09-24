@@ -1,9 +1,9 @@
-"""설정한 루트 디렉터리들을 훑어 portless 대상 프로젝트와 그 worktree 를 찾는다.
+"""Scan the configured root folders for portless projects and their git worktrees.
 
-대상 = `portless.json` 이 있거나 `package.json` 의 의존성·스크립트에 portless 가 들어 있는 폴더.
-호스트명은 portless 0.15 의 규칙(`cli.js` 의 inferProjectName · detectWorktreePrefix)을 그대로
-옮겼다 — 여기서 계산한 이름과 portless 가 실제로 등록하는 이름이 어긋나면 실행 중인 서비스를
-「정지」로 잘못 그린다.
+A project is a folder with a `portless.json`, or whose `package.json` mentions portless in its
+dependencies or scripts. Hostnames follow portless 0.15's rules (`inferProjectName` and
+`detectWorktreePrefix` in `cli.js`), ported as-is: if the name computed here drifts from the one
+portless actually registers, a running service is drawn as stopped.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from pathlib import Path
 
 CONFIG = Path(os.environ.get("PORTLESS_MANAGER_CONFIG")
               or Path.home() / ".config/portless-manager/config.json")
-# 설정 파일이 없을 때 훑는 곳 — 존재하는 것만 쓴다
+# Scanned when there is no config file; only the ones that exist are used
 DEFAULT_ROOTS = ("~/Developer", "~/Projects", "~/Code", "~/src", "~/dev")
 DEFAULT_BRANCHES = {"main", "master"}
 MAX_LABEL = 63
@@ -24,14 +24,14 @@ MAX_LABEL = 63
 
 @dataclass
 class Target:
-    """portless 로 띄울 수 있는 디렉터리 하나 — 본 체크아웃이거나 worktree."""
+    """One directory portless can run: the main checkout or a worktree."""
     path: Path
-    name: str                   # 워크트리 접두사까지 붙은 portless 이름 (예: feat.bada)
+    name: str                   # portless name including any worktree prefix (e.g. feat.blog)
     branch: str | None = None
     worktree: bool = False
     script: str = "dev"
-    runnable: bool = True       # package.json 에 그 스크립트가 있는가
-    note: tuple[str, dict] | None = None   # 실행 불가 사유 등 — (i18n 키, 인자)
+    runnable: bool = True       # whether package.json has that script
+    note: tuple[str, dict] | None = None   # e.g. why it cannot run, as (i18n key, args)
 
     @property
     def key(self) -> str:
@@ -50,7 +50,7 @@ class Project:
         return self.path.name
 
 
-# ── portless 이름 규칙 (cli.js 이식) ─────────────────────────────────────
+# ── portless naming rules (ported from cli.js) ───────────────────────────
 def _truncate(label: str) -> str:
     if len(label) <= MAX_LABEL:
         return label
@@ -73,7 +73,7 @@ def _read_json(p: Path) -> dict | None:
 
 
 def _package_name(start: Path) -> str | None:
-    """portless 와 같이 부모 방향으로 package.json 의 name 을 찾는다 (스코프 제거)."""
+    """Walk up like portless does to find a package.json name, with any scope stripped."""
     d = start
     while True:
         pkg = _read_json(d / "package.json")
@@ -118,7 +118,7 @@ def _head_branch(gitdir: Path) -> str | None:
     return m.group(1) if m else None
 
 
-# ── 탐색 ──────────────────────────────────────────────────────────────────
+# ── Discovery ─────────────────────────────────────────────────────────────
 def uses_portless(path: Path) -> bool:
     if (path / "portless.json").is_file():
         return True
@@ -151,7 +151,7 @@ def make_target(path: Path, *, worktree: bool = False, branch: str | None = None
 
 
 def worktrees_of(repo: Path) -> list[tuple[Path, str | None]]:
-    """`.git/worktrees/*` 를 직접 읽는다 — 10초마다 git 을 띄우지 않으려고."""
+    """Read `.git/worktrees/*` directly, to avoid spawning git every 10 seconds."""
     wt_dir = repo / ".git" / "worktrees"
     out = []
     try:
@@ -170,12 +170,12 @@ def worktrees_of(repo: Path) -> list[tuple[Path, str | None]]:
 
 
 def config_roots(config: Path | None = None) -> list[Path]:
-    """`config.json` 의 `roots` — 각 루트의 **바로 아래 폴더**가 프로젝트 후보다.
+    """`roots` from `config.json`. Each **direct child** of a root is a project candidate.
 
     ```json
     { "roots": ["~/Documents/work", "~/Documents/personal"] }
     ```
-    메뉴에는 루트 폴더 이름으로 묶여 나온다. 설정이 없으면 DEFAULT_ROOTS 중 있는 것.
+    The menu groups projects by root folder name. Without a config, the DEFAULT_ROOTS that exist.
     """
     cfg = _read_json(config or CONFIG)
     raw = cfg.get("roots") if cfg else None
@@ -197,6 +197,6 @@ def discover(roots: list[Path] | None = None) -> list[Project]:
             proj = Project(workspace=root.name, path=d, main=make_target(d))
             proj.worktrees = [make_target(p, worktree=True, branch=b) for p, b in worktrees_of(d)]
             projects.append(proj)
-    # 루트 안에 만든 worktree 는 폴더로도 잡힌다 — 본 저장소 밑에만 둔다
+    # A worktree created inside a root is also found as a folder; keep it only under its repo
     wt_paths = {w.path.resolve() for p in projects for w in p.worktrees}
     return [p for p in projects if p.path.resolve() not in wt_paths]

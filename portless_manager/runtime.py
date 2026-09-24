@@ -1,8 +1,8 @@
-"""portless 의 실행 상태를 읽고, 서비스를 띄우고 끈다.
+"""Read portless's runtime state, and start and stop services.
 
-상태의 정본은 portless 자신의 `~/.portless/routes.json` 이다 (`{hostname, port, pid}`, pid 는
-portless CLI 프로세스). 이 도구가 따로 두는 것은 「내가 띄웠는데 아직 route 가 없는」 구간을
-알기 위한 기동 기록뿐이다 — 없으면 시작 중과 시작 실패를 구분할 수 없다.
+The source of truth is portless's own `~/.portless/routes.json` (`{hostname, port, pid}`, where pid
+is the portless CLI process). The only state this tool keeps is a launch record covering "launched,
+but no route yet". Without it, starting and failed-to-start would look the same.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .discover import Target
 
-# 사용자에게 보일 결과는 문장이 아니라 (i18n 키, 인자) 로 돌려준다 — 번역은 화면 쪽에서만 한다
+# User-facing results are returned as (i18n key, args), not sentences; only the display layer translates
 Msg = tuple[str, dict]
 
 
@@ -33,7 +33,7 @@ STOP_WAIT = 8.0
 
 
 def env() -> dict:
-    """SwiftBar 는 로그인 셸의 PATH 를 물려주지 않는다 — node 24+ 가 있는 경로를 앞에 붙인다."""
+    """SwiftBar doesn't inherit the login shell's PATH, so prepend the paths where Node 24+ lives."""
     e = dict(os.environ)
     e["PATH"] = EXTRA_PATH + (":" + e["PATH"] if e.get("PATH") else "")
     e.setdefault("NO_COLOR", "1")
@@ -51,17 +51,17 @@ def alive(pid: int) -> bool:
         os.kill(pid, 0)
     except ProcessLookupError:
         return False
-    except PermissionError:      # 다른 사용자(root) 소유 — 살아 있다
+    except PermissionError:      # owned by another user (root), so it is alive
         return True
     return True
 
 
-# ── portless 상태 ────────────────────────────────────────────────────────
+# ── portless state ───────────────────────────────────────────────────────
 @dataclass
 class Route:
     hostname: str
     port: int
-    pid: int                    # 0 = `portless alias` 로 건 정적 route
+    pid: int                    # 0 = static route added with `portless alias`
 
     @property
     def static(self) -> bool:
@@ -79,7 +79,7 @@ def routes() -> list[Route]:
             rt = Route(str(r["hostname"]), int(r["port"]), int(r["pid"]))
         except (KeyError, TypeError, ValueError):
             continue
-        if rt.static or alive(rt.pid):       # portless 도 같은 기준으로 죽은 route 를 거른다
+        if rt.static or alive(rt.pid):       # portless drops dead routes by the same rule
             out.append(rt)
     return out
 
@@ -137,7 +137,7 @@ def hostnames(t: Target) -> list[str]:
     return [f"{t.name}.{tld}" for tld in tlds()]
 
 
-# ── 기동 기록 ────────────────────────────────────────────────────────────
+# ── Launch records ───────────────────────────────────────────────────────
 def _launch_file(t: Target) -> Path:
     return LAUNCH_DIR / f"{t.key}.json"
 
@@ -168,7 +168,7 @@ def _clear_launch(t: Target) -> None:
         pass
 
 
-# ── 상태 판정 ────────────────────────────────────────────────────────────
+# ── Status ───────────────────────────────────────────────────────────────
 RUNNING, STARTING, FAILED, STOPPED, UNRUNNABLE = "running", "starting", "failed", "stopped", "unrunnable"
 
 
@@ -184,7 +184,7 @@ def status(t: Target, live: list[Route]) -> Status:
     route = next((r for r in live if r.hostname in names), None)
     rec = _load_launch(t)
     if route:
-        if rec and not rec.get("ran"):     # 한 번이라도 떴다 — 이후 사라지면 실패가 아니라 정지
+        if rec and not rec.get("ran"):     # it came up once, so disappearing later means stopped, not failed
             rec["ran"] = True
             _save_launch(t, rec)
         return Status(RUNNING, route)
@@ -197,7 +197,7 @@ def status(t: Target, live: list[Route]) -> Status:
     return Status(STOPPED if t.runnable else UNRUNNABLE)
 
 
-# ── 동작 ──────────────────────────────────────────────────────────────────
+# ── Actions ───────────────────────────────────────────────────────────────
 def start(t: Target) -> Msg:
     if not t.runnable:
         return msg("result.unrunnable", reason=t.note)
@@ -208,15 +208,15 @@ def start(t: Target) -> Msg:
     if not exe:
         return msg("result.no_portless")
     if not proxy().running:
-        # 443 프록시는 sudo 가 필요한데 SwiftBar 에는 TTY 가 없다 — 띄워 봐야 즉시 실패한다
+        # The 443 proxy needs sudo and SwiftBar has no TTY, so a launch would fail immediately
         return msg("result.proxy_down")
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log = log_file(t)
     with open(log, "w", encoding="utf-8") as f:
         f.write(f"# portless-manager {time.strftime('%Y-%m-%d %H:%M:%S')}  {t.path}\n")
         f.flush()
-        # 새 세션으로 떼어 SwiftBar 가 끝나도 살아 있게 한다. 인자 없는 `portless` 는
-        # portless.json / package.json 의 스크립트를 그 디렉터리의 이름 규칙으로 띄운다.
+        # Detach into a new session so it outlives SwiftBar. Bare `portless` runs the script from
+        # portless.json / package.json under that directory's naming rules.
         p = subprocess.Popen([exe], cwd=t.path, env=env(), stdin=subprocess.DEVNULL,
                              stdout=f, stderr=subprocess.STDOUT, start_new_session=True)
     _save_launch(t, {"pid": p.pid, "at": time.time(), "path": str(t.path), "name": t.name})
@@ -232,11 +232,11 @@ def _children(pid: int) -> list[int]:
 
 
 def _terminate(pid: int) -> bool:
-    """SIGTERM → 대기 → 남으면 자식 프로세스 그룹까지 SIGKILL.
+    """SIGTERM, wait, then SIGKILL the child process groups if it is still alive.
 
-    portless 는 앱을 `detached` 로 띄워(별도 프로세스 그룹) SIGTERM 을 받으면 스스로 앱을
-    정리하고 route 를 지운다. 그게 안 되면 자식 그룹을 직접 죽인다 — 안 그러면 `next dev` 가
-    고아로 포트를 쥐고 남는다.
+    portless starts the app `detached` (its own process group), and on SIGTERM it shuts the app
+    down and removes the route itself. If that doesn't happen, kill the child groups directly.
+    Otherwise `next dev` is left orphaned, holding its port.
     """
     kids = _children(pid)
     try:
@@ -292,7 +292,7 @@ def stop_all() -> Msg:
 
 
 def run_portless(*args: str, timeout: float = 60) -> tuple[int, str]:
-    """(종료 코드, 출력). portless 가 없으면 127, 시간 초과는 124 — 출력은 비운다."""
+    """(exit code, output). 127 if portless is missing, 124 on timeout, with empty output in both."""
     exe = portless_bin()
     if not exe:
         return 127, ""
@@ -305,7 +305,7 @@ def run_portless(*args: str, timeout: float = 60) -> tuple[int, str]:
 
 
 def proxy_command(action: str, px: "Proxy | None" = None) -> str:
-    """터미널에서 실행할 프록시 명령. 1024 미만 포트는 sudo 가 필요하다."""
+    """The proxy command to run in Terminal. Ports below 1024 need sudo."""
     px = px or proxy()
     sudo = "sudo " if px.port < 1024 else ""
     if action == "start":

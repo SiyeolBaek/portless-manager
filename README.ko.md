@@ -151,7 +151,7 @@ python3 -m portless_manager --lang en list
 ## 개발
 
 사용자에게 보이는 문구는 전부 `portless_manager/locales/` 에 있습니다. 코드는 키(`_("target.start")`)만
-쓰고, 주석·독스트링 밖에 한글 문구를 직접 쓰면 테스트가 실패합니다.
+쓰고, 패키지 코드에 한글이 들어가면(주석 포함) 테스트가 실패합니다.
 
 ```sh
 python3 -m unittest discover -s tests

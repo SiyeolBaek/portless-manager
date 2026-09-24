@@ -1,4 +1,4 @@
-"""python3 -m portless_manager <명령> — SwiftBar 래퍼가 부르는 진입점."""
+"""python3 -m portless_manager <command> — the entry point the SwiftBar wrapper calls."""
 from __future__ import annotations
 
 import argparse
@@ -30,7 +30,7 @@ def _as(s: str) -> str:
 
 
 def in_terminal(cmd: str) -> None:
-    """터미널 새 창에서 명령을 실행한다. 출력이 길거나 대화형인 portless 명령용."""
+    """Run a command in a new Terminal window, for portless commands that are long or interactive."""
     full = f"export PATH={shlex.quote(rt.EXTRA_PATH)}:$PATH; {cmd}"
     subprocess.run(["osascript", "-e", f'tell application "Terminal" to do script {_as(full)}',
                     "-e", 'tell application "Terminal" to activate'], capture_output=True)
@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> None:
         wrapper = a.wrapper or str(plugin_dir() / PLUGIN_NAME)
         try:
             print(Menu(wrapper).render(discover()))
-        except Exception as e:      # 메뉴바에 트레이스백 대신 한 줄
+        except Exception as e:      # one line in the menu bar instead of a traceback
             err = _("menu.render_failed", error=repr(e)[:150])
             print(f"⚠ | sfimage=exclamationmark.triangle color={RED}\n---\n{err} | {BASE}")
     elif a.cmd == "start":
@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> None:
         install()
 
 
-# ── 설치 ──────────────────────────────────────────────────────────────────
+# ── Install ───────────────────────────────────────────────────────────────
 def plugin_dir() -> Path:
     try:
         out = subprocess.run(["defaults", "read", "com.ameba.SwiftBar", "PluginDirectory"],
@@ -154,7 +154,7 @@ def install() -> None:
     d.mkdir(parents=True, exist_ok=True)
     dest = d / PLUGIN_NAME
     q = lambda s: "'" + str(s).replace("'", "'\\''") + "'"
-    tmp = d / f".{PLUGIN_NAME}.tmp"   # 숨김 이름 — SwiftBar 가 플러그인으로 집어가지 않게
+    tmp = d / f".{PLUGIN_NAME}.tmp"   # hidden name, so SwiftBar doesn't load it as a plugin
     tmp.write_text(WRAPPER.format(root=q(ROOT), py=q(py), missing=q(_("wrapper.missing", root=ROOT))),
                    encoding="utf-8")
     tmp.chmod(0o755)

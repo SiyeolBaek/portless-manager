@@ -158,7 +158,7 @@ tells "starting" apart from "failed".
 ## Development
 
 All user-facing text lives in `portless_manager/locales/`. Code refers to keys only
-(`_("target.start")`), and a test fails if a hard-coded Korean string slips into the code outside comments and docstrings.
+(`_("target.start")`), and a test fails if any Korean text, including comments, slips into the package code.
 
 ```sh
 python3 -m unittest discover -s tests

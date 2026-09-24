@@ -20,7 +20,7 @@ def git(cwd: Path, *args: str) -> None:
 
 
 class NamingTest(unittest.TestCase):
-    """portless 0.15 cli.js 의 이름 규칙과 같아야 한다."""
+    """Must match the naming rules in portless 0.15 cli.js."""
 
     def test_sanitize(self):
         self.assertEqual(dc.sanitize("My_App!!Name"), "my-app-name")
@@ -51,7 +51,7 @@ class DiscoverTest(unittest.TestCase):
         write(ws / "a" / "portless.json", {"name": "alpha"})
         write(ws / "a" / "package.json", {"scripts": {"dev": "next dev"}})
         write(ws / "b" / "package.json", {"name": "b", "devDependencies": {"portless": "^0.15"}})
-        write(ws / "c" / "package.json", {"name": "c", "scripts": {"dev": "vite"}})   # portless 안 씀
+        write(ws / "c" / "package.json", {"name": "c", "scripts": {"dev": "vite"}})   # does not use portless
         git(ws / "a", "init", "-q", "-b", "main")
         git(ws / "a", "add", ".")
         git(ws / "a", "commit", "-qm", "init")
@@ -62,7 +62,7 @@ class DiscoverTest(unittest.TestCase):
 
     def test_projects_and_worktrees(self):
         ps = dc.discover([self.root / "work", self.root / "missing"])
-        self.assertEqual([p.dirname for p in ps], ["a", "b"])   # a-x 는 a 밑으로, c 는 제외
+        self.assertEqual([p.dirname for p in ps], ["a", "b"])   # a-x goes under a; c is excluded
         a, b = ps
         self.assertEqual(a.main.name, "alpha")
         self.assertEqual([(w.name, w.branch) for w in a.worktrees], [("x.alpha", "feat/x")])
@@ -109,7 +109,7 @@ class StatusTest(unittest.TestCase):
         self.assertEqual(rt.status(self.t, rt.routes()).state, rt.RUNNING)
         self.routes([])
         rt._save_launch(self.t, {**rt._load_launch(self.t), "pid": 999999})
-        self.assertEqual(rt.status(self.t, rt.routes()).state, rt.STOPPED)   # 한 번 떴으니 실패 아님
+        self.assertEqual(rt.status(self.t, rt.routes()).state, rt.STOPPED)   # it came up once, so not failed
 
     def test_failed_when_launcher_died_before_route(self):
         rt._save_launch(self.t, {"pid": 999999, "at": 0})

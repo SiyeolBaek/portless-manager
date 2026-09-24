@@ -1,4 +1,3 @@
-import ast
 import os
 import re
 import string
@@ -10,7 +9,7 @@ from portless_manager import i18n
 from portless_manager.menu import Menu
 
 PKG = Path(i18n.__file__).parent
-HANGUL = re.compile(r"[가-힣]")
+HANGUL = re.compile(r"[\uac00-\ud7a3]")
 
 
 def fields(text: str) -> set[str]:
@@ -18,7 +17,7 @@ def fields(text: str) -> set[str]:
 
 
 class CatalogTest(unittest.TestCase):
-    """새 언어 파일은 en.json 과 키·자리표시자가 같아야 한다."""
+    """Every locale must have the same keys and placeholders as en.json."""
 
     def test_every_locale_matches_english(self):
         en = i18n.catalog("en")
@@ -40,16 +39,12 @@ class CatalogTest(unittest.TestCase):
         self.assertTrue(used)
         self.assertEqual(used - set(en), set(), "keys used in code but missing from en.json")
 
-    def test_no_hardcoded_hangul_in_code(self):
-        """문구는 locales/ 에만. 주석·독스트링은 대상이 아니다."""
+    def test_no_korean_in_package_code(self):
+        """Korean belongs in locales/ko.json only, not in code, comments, or docstrings."""
         for py in PKG.glob("*.py"):
-            tree = ast.parse(py.read_text(encoding="utf-8"))
-            docstrings = {id(n.value) for n in ast.walk(tree)
-                          if isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant)}
-            for n in ast.walk(tree):
-                if isinstance(n, ast.Constant) and isinstance(n.value, str) and id(n) not in docstrings:
-                    with self.subTest(file=py.name, line=n.lineno):
-                        self.assertIsNone(HANGUL.search(n.value), n.value[:60])
+            for n, line in enumerate(py.read_text(encoding="utf-8").splitlines(), 1):
+                with self.subTest(file=py.name, line=n):
+                    self.assertIsNone(HANGUL.search(line), line.strip()[:60])
 
 
 class ResolveTest(unittest.TestCase):
@@ -83,7 +78,7 @@ class ResolveTest(unittest.TestCase):
     def test_missing_key_and_bad_args_do_not_crash(self):
         i18n.set_lang("ko")
         self.assertEqual(i18n.t("no.such_key"), "no.such_key")
-        self.assertIn("{name}", i18n.t("result.started"))       # 인자 누락 → 원문 그대로
+        self.assertIn("{name}", i18n.t("result.started"))       # missing args: template returned as-is
         self.assertEqual(i18n.tr(("result.unrunnable", {"reason": ("note.no_script", {"script": "dev"})})),
                          '실행할 수 없음: "dev" 스크립트 없음')
 

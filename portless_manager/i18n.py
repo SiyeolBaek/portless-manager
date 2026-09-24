@@ -1,10 +1,12 @@
-"""메뉴·알림·CLI 문구 번역. 문구는 전부 `locales/<언어>.json` 에 있고 코드에는 키만 둔다.
+"""Translations for the menu, notifications, and CLI. All text lives in `locales/<lang>.json`;
+code refers to keys only.
 
-언어 결정 순서: `PORTLESS_MANAGER_LANG` → config.json 의 `language` → macOS 시스템 언어
-(`AppleLanguages`) → `LC_ALL`/`LANG` → `en`. SwiftBar 같은 GUI 앱은 `LANG` 을 넘겨주지 않는
-경우가 많아서 macOS 설정을 먼저 본다.
+Language resolution: `PORTLESS_MANAGER_LANG` → `language` in config.json → the macOS preferred
+language (`AppleLanguages`) → `LC_ALL`/`LANG` → `en`. GUI apps such as SwiftBar often don't pass
+`LANG`, so the macOS setting is checked first.
 
-번역이 없는 키는 `en.json` 으로, 그것도 없으면 키 자체로 보여준다 — 메뉴가 깨지지 않게.
+A key missing from a translation falls back to `en.json`, then to the key itself, so the menu
+never breaks.
 """
 from __future__ import annotations
 
@@ -34,7 +36,7 @@ def available() -> list[str]:
 
 
 def match(tag: str | None) -> str | None:
-    """`ko-KR`·`ko_KR.UTF-8`·`zh-Hans` 같은 태그를 있는 locale 파일에 맞춘다 (전체 → 주 언어)."""
+    """Map a tag like `ko-KR`, `ko_KR.UTF-8`, or `zh-Hans` to an existing locale file (full tag, then base language)."""
     if not tag:
         return None
     tag = tag.split(".")[0].replace("_", "-").strip().lower()
@@ -83,7 +85,7 @@ def lang() -> str:
 
 
 def set_lang(code: str | None) -> None:
-    """테스트·CLI 용. None 이면 자동 감지로 되돌린다."""
+    """For tests and the CLI. None restores auto-detection."""
     global _forced
     _forced = match(code) if code else None
 
@@ -97,7 +99,7 @@ def t(key: str, **kw) -> str:
 
 
 def tr(message: "tuple[str, dict] | None") -> str:
-    """runtime·discover 가 돌려준 (키, 인자) 를 문장으로."""
+    """Turn a (key, args) message from runtime or discover into text."""
     if not message:
         return ""
     key, kw = message
