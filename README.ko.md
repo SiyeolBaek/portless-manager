@@ -5,21 +5,9 @@
 [portless](https://github.com/vercel-labs/portless) 개발 서버를 위한 macOS 메뉴바.
 내 장비의 portless 프로젝트를 폴더별로 모아 보고, 클릭 한 번으로 실행·종료·페이지 열기를 합니다.
 
-```
-🖥 2
-├ 프록시 🟢 실행 중 · 443          ▸ 정지 · doctor · list
-├ ■ 모든 서비스 종료 (2)
-├ 고아 프로세스 정리 (prune)
-├ work
-│  └ ⚪ api-server                  ▸ ▶ 실행 · URL 복사 · 에디터 · 터미널 · Finder · 로그
-└ personal
-   ├ 🟢 blog   blog.localhost   🌿 1/2
-   │   ▸ ↗ https://blog.localhost · ■ 종료 · ⟳ 재시작 · …
-   │   ▸ worktree
-   │       🟢 feat/search   search.blog.localhost   ▸ …
-   │       ⚪ fix/nav                              ▸ …
-   └ ⛔ docs                       ▸ 실행 불가 — "dev" 스크립트 없음
-```
+<p align="center">
+  <img src="docs/screenshot-ko.png" width="560" alt="폴더별로 묶인 프로젝트와, blog 프로젝트 및 feat/search worktree 를 펼친 portless-manager 메뉴">
+</p>
 
 ## 기능
 

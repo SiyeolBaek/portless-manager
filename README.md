@@ -5,21 +5,9 @@
 A macOS menu bar for [portless](https://github.com/vercel-labs/portless) dev servers.
 See every portless project on your machine grouped by folder, and start, stop, or open them in one click.
 
-```
-🖥 2
-├ Proxy 🟢 running · 443          ▸ stop · doctor · list
-├ ■ Stop all services (2)
-├ Prune orphaned processes
-├ work
-│  └ ⚪ api-server                  ▸ ▶ Start · Copy URL · Editor · Terminal · Finder · Log
-└ personal
-   ├ 🟢 blog   blog.localhost   🌿 1/2
-   │   ▸ ↗ https://blog.localhost · ■ Stop · ⟳ Restart · …
-   │   ▸ worktree
-   │       🟢 feat/search   search.blog.localhost   ▸ …
-   │       ⚪ fix/nav                              ▸ …
-   └ ⛔ docs                       ▸ Not runnable — no "dev" script
-```
+<p align="center">
+  <img src="docs/screenshot-en.png" width="560" alt="portless-manager menu showing projects grouped by folder, with the blog project and its feat/search worktree expanded">
+</p>
 
 ## Features
 
