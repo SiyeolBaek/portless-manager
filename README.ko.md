@@ -30,7 +30,7 @@
 - 전역 설치한 [portless](https://github.com/vercel-labs/portless) (`npm i -g portless`, Node.js 24+ 필요)
 - Python 3.10+ (표준 라이브러리만 사용해서 설치할 패키지가 없습니다)
 
-portless 0.15.5, SwiftBar 2.1.1 에서 확인했습니다.
+macOS 26 (Tahoe, Apple silicon), portless 0.15.5, SwiftBar 2.1.1 에서 확인했습니다.
 
 ## 설치
 

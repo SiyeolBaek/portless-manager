@@ -34,7 +34,7 @@ See every portless project on your machine grouped by folder, and start, stop, o
   which needs Node.js 24+
 - Python 3.10+ (standard library only, no packages to install)
 
-Tested with portless 0.15.5 and SwiftBar 2.1.1.
+Tested on macOS 26 (Tahoe, Apple silicon) with portless 0.15.5 and SwiftBar 2.1.1.
 
 ## Install
 
