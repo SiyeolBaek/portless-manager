@@ -68,7 +68,7 @@ class DiscoverTest(unittest.TestCase):
         self.assertEqual([(w.name, w.branch) for w in a.worktrees], [("x.alpha", "feat/x")])
         self.assertEqual(a.workspace, "work")
         self.assertFalse(b.main.runnable)
-        self.assertIn("dev", b.main.note)
+        self.assertEqual(b.main.note, ("note.no_script", {"script": "dev"}))
 
 
 class ConfigTest(unittest.TestCase):

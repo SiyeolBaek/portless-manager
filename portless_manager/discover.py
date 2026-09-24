@@ -31,7 +31,7 @@ class Target:
     worktree: bool = False
     script: str = "dev"
     runnable: bool = True       # package.json 에 그 스크립트가 있는가
-    note: str = ""              # 실행 불가 사유 등
+    note: tuple[str, dict] | None = None   # 실행 불가 사유 등 — (i18n 키, 인자)
 
     @property
     def key(self) -> str:
@@ -142,11 +142,11 @@ def make_target(path: Path, *, worktree: bool = False, branch: str | None = None
     t = Target(path=path, name=f"{prefix}.{base}" if prefix else base,
                branch=branch, worktree=worktree, script=script)
     if cfg and cfg.get("apps"):
-        t.runnable, t.note = False, "모노레포(apps) 는 아직 지원하지 않음"
+        t.runnable, t.note = False, ("note.monorepo", {})
     elif script not in scripts:
-        t.runnable, t.note = False, f'"{script}" 스크립트 없음'
+        t.runnable, t.note = False, ("note.no_script", {"script": script})
     elif worktree and not prefix:
-        t.note = f"{branch or 'detached'} 브랜치라 본 체크아웃과 이름이 같다"
+        t.note = ("note.no_prefix", {"branch": branch or "HEAD"})
     return t
 
 

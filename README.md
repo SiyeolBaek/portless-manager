@@ -21,8 +21,6 @@ See every portless project on your machine grouped by folder, and start, stop, o
    └ ⛔ docs                       ▸ Not runnable — no "dev" script
 ```
 
-> **Note:** menu labels are currently in Korean. English labels are planned.
-
 ## Features
 
 - **Auto-discovery.** Rescans your project folders every 10 seconds. New projects, renamed apps, and
@@ -35,6 +33,7 @@ See every portless project on your machine grouped by folder, and start, stop, o
   process tree so `next dev` doesn't linger on a port.
 - **Shortcuts.** Open the page, copy the URL, open the folder in your editor, terminal, or Finder,
   and view the service log.
+- **Multilingual.** English and Korean, picked from your macOS language. Adding a language is one JSON file.
 - **Proxy controls.** Start and stop the proxy, `portless doctor`, `portless prune`, and
   install the proxy as a startup service.
 
@@ -73,7 +72,8 @@ Tell it where your projects live in `~/.config/portless-manager/config.json`:
 
 ```json
 {
-  "roots": ["~/Documents/work", "~/Documents/personal"]
+  "roots": ["~/Documents/work", "~/Documents/personal"],
+  "language": "auto"
 }
 ```
 
@@ -82,6 +82,7 @@ Tell it where your projects live in `~/.config/portless-manager/config.json`:
   `portless` in its dependencies or scripts.
 - Without a config file, it scans whichever of `~/Developer`, `~/Projects`, `~/Code`, `~/src`, and
   `~/dev` exist.
+- `language` is optional: `auto` (default), `en`, `ko`, … See [Languages](#languages).
 - Set `PORTLESS_MANAGER_CONFIG` to use a different config path. `PORTLESS_STATE_DIR` is honored the
   same way portless honors it.
 
@@ -89,6 +90,37 @@ Tell it where your projects live in `~/.config/portless-manager/config.json`:
 python3 -m portless_manager config   # show the config path and resolved roots
 python3 -m portless_manager list     # print every project and its status
 ```
+
+## Languages
+
+Menus, notifications, and CLI output are translated. Available: **English** (`en`), **한국어** (`ko`).
+
+The language is chosen in this order:
+
+1. The `PORTLESS_MANAGER_LANG` environment variable
+2. `"language"` in `config.json`
+3. Your macOS preferred language (`defaults read -g AppleLanguages`)
+4. `LC_ALL` / `LANG`
+5. English
+
+A regional tag falls back to its base language (`ko-KR` → `ko`), and any string missing from a
+translation falls back to English. SwiftBar usually doesn't pass `LANG` to plugins, which is why the
+macOS setting comes before it. For one-off CLI use, pass `--lang`:
+
+```sh
+python3 -m portless_manager --lang en list
+```
+
+### Adding a language
+
+1. Copy `portless_manager/locales/en.json` to `portless_manager/locales/<code>.json`, using a
+   language code such as `ja` or `pt-BR`.
+2. Translate the values. Keep every key and every `{placeholder}` as it is. Symbols like ▶ ■ ⟳ are
+   part of the label, so keep them too.
+3. Set `"_language"` to the language's own name.
+4. Run `python3 -m unittest discover -s tests`. It fails if a key or placeholder is missing.
+
+Pull requests with new languages are welcome.
 
 ## Status icons
 
@@ -124,6 +156,9 @@ tells "starting" apart from "failed".
   hostname with the main checkout. The menu flags this.
 
 ## Development
+
+All user-facing text lives in `portless_manager/locales/`. Code refers to keys only
+(`_("target.start")`), and a test fails if a hard-coded Korean string slips into the code outside comments and docstrings.
 
 ```sh
 python3 -m unittest discover -s tests

@@ -31,6 +31,7 @@
 - **실행·종료·재시작.** 실행은 메뉴바와 분리해서 띄우고, 종료는 프로세스 트리 전체를 끝내서
   `next dev` 가 포트를 쥔 채 남지 않게 합니다.
 - **바로가기.** 페이지 열기, URL 복사, 에디터·터미널·Finder 에서 폴더 열기, 서비스 로그 보기.
+- **다국어.** 영어·한국어를 지원하고 macOS 언어 설정을 따릅니다. 언어 추가는 JSON 파일 하나면 됩니다.
 - **프록시 관리.** 프록시 시작·정지, `portless doctor`, `portless prune`, 부팅 시 자동 시작 설치.
 
 ## 요구 사항
@@ -67,7 +68,8 @@ portless 는 443 포트를 쓰고, 여기에는 `sudo` 가 필요합니다. Swif
 
 ```json
 {
-  "roots": ["~/Documents/work", "~/Documents/personal"]
+  "roots": ["~/Documents/work", "~/Documents/personal"],
+  "language": "auto"
 }
 ```
 
@@ -75,6 +77,7 @@ portless 는 443 포트를 쓰고, 여기에는 `sudo` 가 필요합니다. Swif
 - `portless.json` 이 있거나, `package.json` 의 의존성·스크립트에 `portless` 가 있으면 portless
   프로젝트로 봅니다.
 - 설정 파일이 없으면 `~/Developer`, `~/Projects`, `~/Code`, `~/src`, `~/dev` 중 있는 곳을 훑습니다.
+- `language` 는 선택입니다: `auto`(기본), `en`, `ko`, … [언어](#언어) 절을 보세요.
 - 설정 경로는 `PORTLESS_MANAGER_CONFIG` 로 바꿀 수 있습니다. `PORTLESS_STATE_DIR` 은 portless 와
   같은 방식으로 따릅니다.
 
@@ -82,6 +85,36 @@ portless 는 443 포트를 쓰고, 여기에는 `sudo` 가 필요합니다. Swif
 python3 -m portless_manager config   # 설정 경로와 실제로 훑는 루트
 python3 -m portless_manager list     # 모든 프로젝트와 상태를 표로
 ```
+
+## 언어
+
+메뉴·알림·CLI 출력을 번역합니다. 지원 언어: **English** (`en`), **한국어** (`ko`).
+
+언어는 아래 순서로 정합니다.
+
+1. 환경변수 `PORTLESS_MANAGER_LANG`
+2. `config.json` 의 `"language"`
+3. macOS 선호 언어 (`defaults read -g AppleLanguages`)
+4. `LC_ALL` / `LANG`
+5. 영어
+
+지역 태그는 주 언어로 맞춥니다 (`ko-KR` → `ko`). 번역에 빠진 문구는 영어로 나옵니다. SwiftBar 는
+보통 플러그인에 `LANG` 을 넘겨주지 않기 때문에 macOS 설정을 먼저 봅니다. CLI 에서 한 번만 바꾸려면
+`--lang` 을 쓰세요.
+
+```sh
+python3 -m portless_manager --lang en list
+```
+
+### 언어 추가하기
+
+1. `portless_manager/locales/en.json` 을 `portless_manager/locales/<코드>.json` 으로 복사합니다
+   (`ja`, `pt-BR` 같은 언어 코드).
+2. 값을 번역합니다. 키와 `{자리표시자}` 는 그대로 둡니다. ▶ ■ ⟳ 같은 기호도 문구의 일부이니 남겨 둡니다.
+3. `"_language"` 에 그 언어로 쓴 언어 이름을 적습니다.
+4. `python3 -m unittest discover -s tests` 를 실행합니다. 키나 자리표시자가 빠지면 실패합니다.
+
+새 언어 Pull Request 를 환영합니다.
 
 ## 상태 표시
 
@@ -116,6 +149,9 @@ python3 -m portless_manager list     # 모든 프로젝트와 상태를 표로
   호스트명이 같습니다. 메뉴에 표시해 둡니다.
 
 ## 개발
+
+사용자에게 보이는 문구는 전부 `portless_manager/locales/` 에 있습니다. 코드는 키(`_("target.start")`)만
+쓰고, 주석·독스트링 밖에 한글 문구를 직접 쓰면 테스트가 실패합니다.
 
 ```sh
 python3 -m unittest discover -s tests

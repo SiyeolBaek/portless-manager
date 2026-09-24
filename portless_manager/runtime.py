@@ -17,13 +17,19 @@ from pathlib import Path
 
 from .discover import Target
 
+# 사용자에게 보일 결과는 문장이 아니라 (i18n 키, 인자) 로 돌려준다 — 번역은 화면 쪽에서만 한다
+Msg = tuple[str, dict]
+
+
+def msg(key: str, **kw) -> Msg:
+    return key, kw
+
 STATE_DIR = Path(os.environ.get("PORTLESS_STATE_DIR") or Path.home() / ".portless")
 APP_DIR = Path.home() / "Library/Application Support/portless-manager"
 LAUNCH_DIR = APP_DIR / "launch"
 LOG_DIR = Path.home() / "Library/Logs/portless-manager"
 EXTRA_PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 STOP_WAIT = 8.0
-PROXY_DOWN = "프록시가 꺼져 있습니다 — 메뉴에서 「프록시 시작」을 먼저 누르세요"
 
 
 def env() -> dict:
@@ -192,18 +198,18 @@ def status(t: Target, live: list[Route]) -> Status:
 
 
 # ── 동작 ──────────────────────────────────────────────────────────────────
-def start(t: Target) -> str:
+def start(t: Target) -> Msg:
     if not t.runnable:
-        return f"실행할 수 없음: {t.note}"
+        return msg("result.unrunnable", reason=t.note)
     st = status(t, routes())
     if st.state in (RUNNING, STARTING):
-        return "이미 실행 중"
+        return msg("result.already_running")
     exe = portless_bin()
     if not exe:
-        return "portless 를 찾을 수 없음"
+        return msg("result.no_portless")
     if not proxy().running:
         # 443 프록시는 sudo 가 필요한데 SwiftBar 에는 TTY 가 없다 — 띄워 봐야 즉시 실패한다
-        return PROXY_DOWN
+        return msg("result.proxy_down")
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log = log_file(t)
     with open(log, "w", encoding="utf-8") as f:
@@ -214,7 +220,7 @@ def start(t: Target) -> str:
         p = subprocess.Popen([exe], cwd=t.path, env=env(), stdin=subprocess.DEVNULL,
                              stdout=f, stderr=subprocess.STDOUT, start_new_session=True)
     _save_launch(t, {"pid": p.pid, "at": time.time(), "path": str(t.path), "name": t.name})
-    return f"시작: {t.name}"
+    return msg("result.started", name=t.name)
 
 
 def _children(pid: int) -> list[int]:
@@ -257,7 +263,7 @@ def _terminate(pid: int) -> bool:
     return not alive(pid)
 
 
-def stop(t: Target) -> str:
+def stop(t: Target) -> Msg:
     live = routes()
     names = set(hostnames(t))
     pids = {r.pid for r in live if r.hostname in names and not r.static}
@@ -266,12 +272,12 @@ def stop(t: Target) -> str:
         pids.add(int(rec["pid"]))
     _clear_launch(t)
     if not pids:
-        return "실행 중이 아님"
+        return msg("result.not_running")
     ok = all(_terminate(p) for p in pids)
-    return f"종료: {t.name}" if ok else f"종료 실패: {t.name} (권한?)"
+    return msg("result.stopped" if ok else "result.stop_failed", name=t.name)
 
 
-def stop_all() -> str:
+def stop_all() -> Msg:
     pids = {r.pid for r in routes() if not r.static}
     for f in LAUNCH_DIR.glob("*.json") if LAUNCH_DIR.is_dir() else []:
         try:
@@ -282,18 +288,19 @@ def stop_all() -> str:
             pids.add(pid)
         f.unlink(missing_ok=True)
     ok = sum(_terminate(p) for p in pids)
-    return f"{ok}/{len(pids)}개 종료"
+    return msg("result.stopped_all", ok=ok, total=len(pids))
 
 
 def run_portless(*args: str, timeout: float = 60) -> tuple[int, str]:
+    """(종료 코드, 출력). portless 가 없으면 127, 시간 초과는 124 — 출력은 비운다."""
     exe = portless_bin()
     if not exe:
-        return 127, "portless 를 찾을 수 없음"
+        return 127, ""
     try:
         p = subprocess.run([exe, *args], env=env(), capture_output=True, text=True,
                            timeout=timeout, stdin=subprocess.DEVNULL)
     except subprocess.TimeoutExpired:
-        return 124, "시간 초과"
+        return 124, ""
     return p.returncode, (p.stdout + p.stderr).strip()
 
 

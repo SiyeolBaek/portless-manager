@@ -5,7 +5,8 @@ import time
 from pathlib import Path
 
 from . import runtime as rt
-from .discover import Project, Target
+from .discover import CONFIG, Project, Target
+from .i18n import t as _, tr
 
 GREEN, AMBER, RED = "#2f9e44", "#d9a400", "#d03b3b"
 TEXT = "#1d1d1f,#f2f2f0"
@@ -61,35 +62,35 @@ class Menu:
         link = rt.url(host, self.px)
         if st.state == rt.RUNNING:
             self.add(d, f"↗ {link}", f"href={_q(link)}")
-            self.add(d, "■ 종료", self.act("stop", t.path))
-            self.add(d, "⟳ 재시작", self.act("restart", t.path))
+            self.add(d, _("target.stop"), self.act("stop", t.path))
+            self.add(d, _("target.restart"), self.act("restart", t.path))
         elif st.state == rt.STARTING:
-            self.add(d, "⏳ 시작 중…", f"color={AMBER}")
-            self.add(d, "■ 취소", self.act("stop", t.path))
+            self.add(d, _("target.starting"), f"color={AMBER}")
+            self.add(d, _("target.cancel"), self.act("stop", t.path))
         elif st.state == rt.UNRUNNABLE:
-            self.add(d, f"실행 불가 — {t.note}", f"color={MUTED}")
+            self.add(d, _("target.unrunnable", reason=tr(t.note)), f"color={MUTED}")
         elif not self.px.running:
             if st.state == rt.FAILED:
-                self.add(d, "⚠️ 시작 실패 — 로그를 확인하세요", f"color={RED}")
-            self.add(d, "▶ 실행 — 프록시가 꺼져 있음", f"color={MUTED}")
+                self.add(d, _("target.failed"), f"color={RED}")
+            self.add(d, _("target.start_proxy_down"), f"color={MUTED}")
         else:
             if st.state == rt.FAILED:
-                self.add(d, "⚠️ 시작 실패 — 로그를 확인하세요", f"color={RED}")
-            self.add(d, "▶ 실행", self.act("start", t.path))
-        self.add(d, "URL 복사", self.act("copy", link))
+                self.add(d, _("target.failed"), f"color={RED}")
+            self.add(d, _("target.start"), self.act("start", t.path))
+        self.add(d, _("target.copy_url"), self.act("copy", link))
         self.sep(d)
         if self.editor:
-            self.add(d, f"{self.editor} 에서 열기", self.act("open-app", self.editor, t.path))
-        self.add(d, f"{self.terminal} 에서 열기", self.act("open-app", self.terminal, t.path))
-        self.add(d, "Finder 에서 보기", self.act("reveal", t.path))
+            self.add(d, _("target.open_in", app=self.editor), self.act("open-app", self.editor, t.path))
+        self.add(d, _("target.open_in", app=self.terminal), self.act("open-app", self.terminal, t.path))
+        self.add(d, _("target.reveal"), self.act("reveal", t.path))
         log = rt.log_file(t)
         if log.exists():
-            self.add(d, "로그 보기", self.act("log", t.path))
+            self.add(d, _("target.log"), self.act("log", t.path))
         info = [str(t.path).replace(str(Path.home()), "~")]
         if st.route:
             info.append(f"port {st.route.port} · pid {st.route.pid}")
         elif t.note and st.state != rt.UNRUNNABLE:
-            info.append(t.note)
+            info.append(tr(t.note))
         for i in info:
             self.add(d, i, f"color={MUTED} size=11")
 
@@ -106,9 +107,9 @@ class Menu:
         self.target_items(1, p.main, st)
         if wts:
             self.sep(1)
-            self.add(1, "worktree", f"color={MUTED} size=11")
+            self.add(1, _("menu.worktrees"), f"color={MUTED} size=11")
             for w, ws in wts:
-                wl = f"{ICON[ws.state]} {w.branch or 'detached'}"
+                wl = f"{ICON[ws.state]} {w.branch or _('target.detached')}"
                 if ws.state == rt.RUNNING:
                     wl += f"   {ws.route.hostname}"
                 self.group(1, wl)
@@ -122,23 +123,23 @@ class Menu:
         self.sep()
 
         if rt.portless_bin() is None:
-            self.add(0, "portless 가 설치돼 있지 않습니다 (npm i -g portless)", f"color={RED}")
+            self.add(0, _("menu.not_installed"), f"color={RED}")
             return "\n".join(self.lines)
 
         px = self.px
         if px.running:
-            self.group(0, f"프록시 🟢 실행 중 · {px.port}")
-            self.add(1, "■ 프록시 정지 (터미널)", self.act("proxy", "stop"))
+            self.group(0, _("proxy.running", port=px.port))
+            self.add(1, _("proxy.stop"), self.act("proxy", "stop"))
         else:
-            self.group(0, "프록시 ⚪ 꺼짐 — 서비스를 띄우려면 먼저 시작", RED)
-            self.add(1, "▶ 프록시 시작 (터미널 · sudo)", self.act("proxy", "start"))
-            self.add(1, "부팅 시 자동 시작 (service install · sudo)", self.act("term", "portless service install"))
-        self.add(1, "portless doctor (터미널)", self.act("doctor"))
-        self.add(1, "portless list (터미널)", self.act("term", "portless list"))
+            self.group(0, _("proxy.down"), RED)
+            self.add(1, _("proxy.start"), self.act("proxy", "start"))
+            self.add(1, _("proxy.install"), self.act("term", "portless service install"))
+        self.add(1, _("proxy.doctor"), self.act("doctor"))
+        self.add(1, _("proxy.list"), self.act("term", "portless list"))
 
         if running:
-            self.add(0, f"■ 모든 서비스 종료 ({running})", self.act("stop-all"))
-        self.add(0, "고아 프로세스 정리 (prune)", self.act("prune"))
+            self.add(0, _("menu.stop_all", count=running), self.act("stop-all"))
+        self.add(0, _("menu.prune"), self.act("prune"))
 
         by_ws: dict[str, list[Project]] = {}
         for p in projects:
@@ -150,10 +151,11 @@ class Menu:
                 self.project(p)
         if not projects:
             self.sep()
-            self.add(0, "portless 를 쓰는 프로젝트가 없습니다", f"color={MUTED}")
-            self.add(0, "스캔 위치 설정: ~/.config/portless-manager/config.json", f"color={MUTED} size=11")
+            self.add(0, _("menu.no_projects"), f"color={MUTED}")
+            hint = str(CONFIG).replace(str(Path.home()), "~")
+            self.add(0, _("menu.config_hint", path=hint), f"color={MUTED} size=11")
 
         self.sep()
-        self.add(0, "새로고침", "refresh=true")
-        self.add(0, time.strftime("갱신 %H:%M:%S"), f"color={MUTED} size=11")
+        self.add(0, _("menu.refresh"), "refresh=true")
+        self.add(0, _("menu.updated", time=time.strftime("%H:%M:%S")), f"color={MUTED} size=11")
         return "\n".join(self.lines)
