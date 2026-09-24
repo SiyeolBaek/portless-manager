@@ -56,5 +56,6 @@
   "cli.root_missing": "(없음)",
   "cli.language": "language  {lang}  (지원: {available})",
   "cli.installed": "설치  {dest}\n  python  {py}\n  저장소  {root}",
+  "cli.installed_launcher": "설치  {dest}\n  실행 파일  {launcher}",
   "wrapper.missing": "저장소 없음: {root}"
 }

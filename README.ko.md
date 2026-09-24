@@ -34,6 +34,23 @@ macOS 26 (Tahoe, Apple silicon), portless 0.15.5, SwiftBar 2.1.1 에서 확인�
 
 ## 설치
 
+### Homebrew
+
+```sh
+brew install --cask swiftbar          # SwiftBar 가 없다면
+brew install siyeolbaek/tap/portless-manager
+portless-manager install
+```
+
+portless 는 의존성으로 함께 설치하지 않습니다. npm 으로 설치한 사람이 많은데, 그러면 두 설치가
+`bin/portless` 에서 충돌하기 때문입니다. `npm install -g portless` 나 `brew install portless` 중
+편한 쪽으로 설치하세요.
+
+플러그인은 버전 번호가 없는 Homebrew `opt` 경로를 부르므로, `brew upgrade portless-manager` 뒤에
+다시 설치할 필요가 없습니다.
+
+### 소스에서 설치
+
 ```sh
 git clone https://github.com/SiyeolBaek/portless-manager.git
 cd portless-manager

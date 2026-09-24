@@ -56,5 +56,6 @@
   "cli.root_missing": "(missing)",
   "cli.language": "language  {lang}  (available: {available})",
   "cli.installed": "Installed  {dest}\n  python    {py}\n  checkout  {root}",
+  "cli.installed_launcher": "Installed  {dest}\n  launcher  {launcher}",
   "wrapper.missing": "portless-manager checkout not found: {root}"
 }

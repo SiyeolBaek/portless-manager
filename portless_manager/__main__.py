@@ -225,7 +225,10 @@ def install() -> None:
     tmp.chmod(0o755)
     tmp.replace(dest)
     launcher = os.environ.get("PORTLESS_MANAGER_LAUNCHER")
-    print(_("cli.installed", dest=dest, py=launcher or sys.executable, root=launcher or ROOT))
+    if launcher:
+        print(_("cli.installed_launcher", dest=dest, launcher=launcher))
+    else:
+        print(_("cli.installed", dest=dest, py=sys.executable, root=ROOT))
 
 
 if __name__ == "__main__":

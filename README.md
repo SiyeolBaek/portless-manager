@@ -38,6 +38,23 @@ Tested on macOS 26 (Tahoe, Apple silicon) with portless 0.15.5 and SwiftBar 2.1.
 
 ## Install
 
+### Homebrew
+
+```sh
+brew install --cask swiftbar          # if you don't have SwiftBar yet
+brew install siyeolbaek/tap/portless-manager
+portless-manager install
+```
+
+portless itself isn't pulled in as a dependency, because many people install it with npm and the
+two would clash on `bin/portless`. Install it either way: `npm install -g portless` or
+`brew install portless`.
+
+The plugin calls Homebrew's unversioned `opt` path, so `brew upgrade portless-manager` needs no
+reinstall.
+
+### From source
+
 ```sh
 git clone https://github.com/SiyeolBaek/portless-manager.git
 cd portless-manager
