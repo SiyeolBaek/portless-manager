@@ -128,7 +128,7 @@ Pull requests with new languages are welcome.
 |---|---|
 | Status | Matches each project's computed hostname against live entries in `~/.portless/routes.json` (`{hostname, port, pid}`). `portless list` has no JSON output, so it reads the file directly. |
 | Start | Runs bare `portless` in the project folder, in a new session so it outlives SwiftBar. Output goes to `~/Library/Logs/portless-manager/<name>.log`. |
-| Ready notification | A detached watcher waits up to 60 seconds for the route's port to accept connections (portless registers the route before the app listens). It then posts a SwiftBar notification (`swiftbar://notify`) that opens the page when clicked. If the launch dies first, it posts a failure notification without a click action: SwiftBar only opens web links from notifications, so a `file://` link to the log would do nothing. Stop and other actions also have no click action. |
+| Ready notification | A detached watcher waits up to 60 seconds for the route's port to accept connections (portless registers the route before the app listens). It then posts a SwiftBar notification (`swiftbar://notify`) that opens the page when clicked. If the launch dies first, it posts a failure notification without a click action: SwiftBar only opens web links from notifications, so a `file://` link to the log would do nothing. Stop and other actions also have no click action. On macOS 26 a click also brings up a SwiftBar dialog; see [Limitations](#limitations). |
 | Stop | Sends SIGTERM to the route's pid (the portless CLI), which shuts the app down and removes the route. If it's still alive after 8 seconds, it SIGKILLs the child process groups too. |
 | Stop all | Stops every live route, including ones outside your configured roots. |
 
@@ -145,6 +145,10 @@ tells "starting" apart from "failed".
   the computed one.
 - **Worktree name collisions.** A worktree on `main` or `master` gets no prefix, so it shares a
   hostname with the main checkout. The menu flags this.
+- **SwiftBar dialog on notification click (macOS 26).** SwiftBar 2.1.1 shows its "SwiftBar is already
+  running" dialog whenever a plugin notification is clicked. The page still opens; close the dialog.
+  This is an upstream bug ([swiftbar/SwiftBar#535](https://github.com/swiftbar/SwiftBar/issues/535))
+  and needs no change here once it's fixed.
 
 ## Development
 

@@ -122,7 +122,7 @@ python3 -m portless_manager --lang en list
 |---|---|
 | 상태 | 프로젝트마다 계산한 호스트명을 `~/.portless/routes.json` (`{hostname, port, pid}`) 의 살아 있는 항목과 맞춥니다. `portless list` 에 JSON 출력이 없어 파일을 직접 읽습니다 |
 | 실행 | 프로젝트 폴더에서 인자 없는 `portless` 를 새 세션으로 띄워 SwiftBar 가 끝나도 살아 있게 합니다. 출력은 `~/Library/Logs/portless-manager/<이름>.log` 로 갑니다 |
-| 준비 알림 | 분리된 감시 프로세스가 route 의 포트가 연결을 받을 때까지 최대 60초 기다립니다 (portless 는 앱이 뜨기 전에 route 를 등록합니다). 그 뒤 SwiftBar 알림(`swiftbar://notify`)을 보내고, 클릭하면 페이지가 열립니다. 그 전에 프로세스가 죽으면 클릭 동작 없는 실패 알림을 보냅니다. SwiftBar 는 알림에서 웹 링크만 열 수 있어서 로그 파일(`file://`) 링크는 동작하지 않기 때문입니다. 종료 등 다른 동작의 알림에도 클릭 동작이 없습니다 |
+| 준비 알림 | 분리된 감시 프로세스가 route 의 포트가 연결을 받을 때까지 최대 60초 기다립니다 (portless 는 앱이 뜨기 전에 route 를 등록합니다). 그 뒤 SwiftBar 알림(`swiftbar://notify`)을 보내고, 클릭하면 페이지가 열립니다. 그 전에 프로세스가 죽으면 클릭 동작 없는 실패 알림을 보냅니다. SwiftBar 는 알림에서 웹 링크만 열 수 있어서 로그 파일(`file://`) 링크는 동작하지 않기 때문입니다. 종료 등 다른 동작의 알림에도 클릭 동작이 없습니다. macOS 26 에서는 클릭할 때 SwiftBar 안내 창도 함께 뜹니다 ([한계](#한계) 참고) |
 | 종료 | route 의 pid(portless CLI)에 SIGTERM 을 보내면 portless 가 앱을 끄고 route 를 지웁니다. 8초 뒤에도 살아 있으면 자식 프로세스 그룹까지 SIGKILL 합니다 |
 | 모두 종료 | 설정한 루트 밖의 것까지 살아 있는 route 를 전부 끕니다 |
 
@@ -138,6 +138,9 @@ python3 -m portless_manager --lang en list
 - **직접 붙인 이름은 매칭되지 않습니다.** `--name` 을 붙여 손으로 띄운 서비스는 계산한 호스트명과 다릅니다.
 - **worktree 이름이 겹칠 수 있습니다.** `main`·`master` 브랜치 worktree 는 접두사가 없어 본 체크아웃과
   호스트명이 같습니다. 메뉴에 표시해 둡니다.
+- **알림을 클릭하면 SwiftBar 안내 창이 뜹니다 (macOS 26).** SwiftBar 2.1.1 은 플러그인 알림을 클릭할 때마다
+  「SwiftBar is already running」 창을 띄웁니다. 페이지는 그대로 열리니 창만 닫으면 됩니다. SwiftBar 쪽 버그
+  ([swiftbar/SwiftBar#535](https://github.com/swiftbar/SwiftBar/issues/535))라서 고쳐지면 이쪽은 바꿀 것이 없습니다.
 
 ## 개발
 

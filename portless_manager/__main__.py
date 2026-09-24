@@ -7,9 +7,9 @@ import shutil
 import subprocess
 import sys
 import time
-import urllib.parse
 from pathlib import Path
 
+from . import notify as notifier
 from . import runtime as rt
 from . import i18n
 from .discover import CONFIG, Target, config_roots, discover
@@ -20,23 +20,12 @@ ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_NAME = "portless-manager.10s.sh"
 
 
-def notify(msg: "str | rt.Msg", title: str = "portless", *, subtitle: str = "", href: str = "") -> None:
-    """Post a notification through SwiftBar, which opens `href` when the notification is clicked.
-
-    `osascript display notification` can't carry a click action, so it is only the fallback for
-    when SwiftBar can't be reached.
-    """
-    msg = tr(msg) if isinstance(msg, tuple) else msg
-    q = {"plugin": PLUGIN_NAME.split(".")[0], "title": title, "body": msg[:200]}
-    if subtitle:
-        q["subtitle"] = subtitle
-    if href:
-        q["href"] = href
-    url = "swiftbar://notify?" + urllib.parse.urlencode(q, quote_via=urllib.parse.quote)
-    if subprocess.run(["open", "-g", url], capture_output=True).returncode == 0:
-        return
-    script = f"display notification {_as(msg[:200])} with title {_as(title)}"
-    subprocess.run(["osascript", "-e", script], capture_output=True)
+def notify(msg: "str | rt.Msg", title: str = "portless", *, subtitle: str = "", href: str = "",
+           plain: "str | rt.Msg" = "") -> None:
+    """Post a notification. `href` opens on click where the backend supports it (see notify.py);
+    `plain` is the wording used when it doesn't."""
+    text = lambda m: tr(m) if isinstance(m, tuple) else m
+    notifier.send(title, text(msg), subtitle=subtitle, href=href, plain=text(plain))
 
 
 def launch(t: Target, title: str = "portless") -> None:
@@ -59,13 +48,14 @@ def watch(t: Target, title: str) -> None:
     if outcome == rt.CANCELLED:
         return
     if outcome == rt.FAILED_EARLY:
-        # No href: SwiftBar 2.1.1 only opens web links from notifications. A file:// log link
-        # just activates SwiftBar and shows its "already running" dialog.
+        # No href: SwiftBar notifications only open web links, so point to the menu instead
         notify(("result.start_failed", {"name": t.name}), title)
         return
     link = rt.url(route.hostname if route else rt.hostnames(t)[0])
-    key = "result.ready" if outcome == rt.READY else "result.still_starting"
-    notify((key, {"name": t.name}), title, subtitle=link, href=link)
+    ready = outcome == rt.READY
+    notify(("result.ready" if ready else "result.still_starting", {"name": t.name}), title,
+           subtitle=link, href=link,
+           plain=("result.ready_plain" if ready else "result.still_starting_plain", {"name": t.name}))
 
 
 def _as(s: str) -> str:
