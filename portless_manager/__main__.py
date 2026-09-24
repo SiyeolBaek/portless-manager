@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.parse
 from pathlib import Path
 
 from . import runtime as rt
@@ -19,10 +20,50 @@ ROOT = Path(__file__).resolve().parent.parent
 PLUGIN_NAME = "portless-manager.10s.sh"
 
 
-def notify(msg: "str | rt.Msg", title: str = "portless") -> None:
+def notify(msg: "str | rt.Msg", title: str = "portless", *, subtitle: str = "", href: str = "") -> None:
+    """Post a notification through SwiftBar, which opens `href` when the notification is clicked.
+
+    `osascript display notification` can't carry a click action, so it is only the fallback for
+    when SwiftBar can't be reached.
+    """
     msg = tr(msg) if isinstance(msg, tuple) else msg
+    q = {"plugin": PLUGIN_NAME.split(".")[0], "title": title, "body": msg[:200]}
+    if subtitle:
+        q["subtitle"] = subtitle
+    if href:
+        q["href"] = href
+    url = "swiftbar://notify?" + urllib.parse.urlencode(q, quote_via=urllib.parse.quote)
+    if subprocess.run(["open", "-g", url], capture_output=True).returncode == 0:
+        return
     script = f"display notification {_as(msg[:200])} with title {_as(title)}"
     subprocess.run(["osascript", "-e", script], capture_output=True)
+
+
+def launch(t: Target, title: str = "portless") -> None:
+    """Start a target, then hand off to a detached watcher that notifies once it's ready.
+
+    The menu click returns right away (the item turns ⏳); the watcher waits in the background.
+    """
+    result = rt.start(t)
+    if result[0] != "result.started":
+        notify(result, title)
+        return
+    env = dict(rt.env(), PORTLESS_MANAGER_LANG=i18n.lang())
+    subprocess.Popen([sys.executable, "-m", "portless_manager", "watch", str(t.path), "--title", title],
+                     cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def watch(t: Target, title: str) -> None:
+    outcome, route = rt.wait_ready(t)
+    if outcome == rt.CANCELLED:
+        return
+    if outcome == rt.FAILED_EARLY:
+        notify(("result.start_failed", {"name": t.name}), title, href=rt.log_file(t).as_uri())
+        return
+    link = rt.url(route.hostname if route else rt.hostnames(t)[0])
+    key = "result.ready" if outcome == rt.READY else "result.still_starting"
+    notify((key, {"name": t.name}), title, subtitle=link, href=link)
 
 
 def _as(s: str) -> str:
@@ -52,6 +93,9 @@ def main(argv: list[str] | None = None) -> None:
     r.add_argument("--wrapper")
     for c in ("start", "stop", "restart", "log", "reveal"):
         sub.add_parser(c).add_argument("path")
+    w = sub.add_parser("watch")
+    w.add_argument("path")
+    w.add_argument("--title", default="portless")
     o = sub.add_parser("open-app")
     o.add_argument("app")
     o.add_argument("path")
@@ -73,14 +117,16 @@ def main(argv: list[str] | None = None) -> None:
             err = _("menu.render_failed", error=repr(e)[:150])
             print(f"⚠ | sfimage=exclamationmark.triangle color={RED}\n---\n{err} | {BASE}")
     elif a.cmd == "start":
-        notify(rt.start(find_target(a.path)))
+        launch(find_target(a.path))
+    elif a.cmd == "watch":
+        watch(find_target(a.path), a.title)
     elif a.cmd == "stop":
         notify(rt.stop(find_target(a.path)))
     elif a.cmd == "restart":
         t = find_target(a.path)
         rt.stop(t)
         time.sleep(0.5)
-        notify(rt.start(t), _("notify.restart"))
+        launch(t, _("notify.restart"))
     elif a.cmd == "log":
         log = rt.log_file(find_target(a.path))
         subprocess.run(["open", "-a", "Console", str(log)])

@@ -1,5 +1,6 @@
 import json
 import os
+import socket
 import subprocess
 import tempfile
 import unittest
@@ -120,6 +121,47 @@ class StatusTest(unittest.TestCase):
         self.routes([{"hostname": "p.test", "port": 1, "pid": 999999}])
         self.assertEqual(rt.routes(), [])
         self.assertEqual(rt.hostnames(self.t), ["p.test"])
+
+
+class WaitReadyTest(unittest.TestCase):
+    """wait_ready reports ready only once the app port accepts connections."""
+    setUp, tearDown, routes = StatusTest.setUp, StatusTest.tearDown, StatusTest.routes
+
+    def test_ready_when_port_listens(self):
+        me = os.getpid()
+        with socket.socket() as srv:
+            srv.bind(("127.0.0.1", 0))
+            srv.listen()
+            port = srv.getsockname()[1]
+            rt._save_launch(self.t, {"pid": me, "at": 0})
+            self.routes([{"hostname": "p.localhost", "port": port, "pid": me}])
+            outcome, route = rt.wait_ready(self.t, timeout=2, poll=0.05)
+        self.assertEqual(outcome, rt.READY)
+        self.assertEqual(route.port, port)
+
+    def test_route_without_listener_times_out(self):
+        me = os.getpid()
+        with socket.socket() as s:
+            s.bind(("127.0.0.1", 0))
+            free = s.getsockname()[1]           # bound but not listening
+            rt._save_launch(self.t, {"pid": me, "at": 0})
+            self.routes([{"hostname": "p.localhost", "port": free, "pid": me}])
+            outcome, route = rt.wait_ready(self.t, timeout=0.3, poll=0.05)
+        self.assertEqual(outcome, rt.TIMEOUT)
+        self.assertIsNotNone(route)
+
+    def test_dies_after_route_before_listening(self):
+        me = os.getpid()
+        rt._save_launch(self.t, {"pid": me, "at": 0, "ran": True})   # route was seen
+        self.routes([])
+        rt._save_launch(self.t, {"pid": 999999, "at": 0, "ran": True})
+        self.assertEqual(rt.wait_ready(self.t, timeout=1, poll=0.05)[0], rt.FAILED_EARLY)
+
+    def test_failed_and_cancelled(self):
+        rt._save_launch(self.t, {"pid": 999999, "at": 0})
+        self.assertEqual(rt.wait_ready(self.t, timeout=1, poll=0.05)[0], rt.FAILED_EARLY)
+        rt._clear_launch(self.t)
+        self.assertEqual(rt.wait_ready(self.t, timeout=1, poll=0.05)[0], rt.CANCELLED)
 
 
 if __name__ == "__main__":

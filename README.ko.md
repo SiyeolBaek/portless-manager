@@ -18,6 +18,8 @@
 - **상태는 portless 에서 직접.** `~/.portless/routes.json` 을 읽으므로 터미널에서 띄운 서비스도 잡힙니다.
 - **실행·종료·재시작.** 실행은 메뉴바와 분리해서 띄우고, 종료는 프로세스 트리 전체를 끝내서
   `next dev` 가 포트를 쥔 채 남지 않게 합니다.
+- **클릭되는 알림.** 서비스가 실제로 요청을 받을 수 있게 되면 알림이 오고, 클릭하면 그 페이지가 열립니다.
+  시작에 실패하면 알림을 클릭해 로그를 엽니다.
 - **바로가기.** 페이지 열기, URL 복사, 에디터·터미널·Finder 에서 폴더 열기, 서비스 로그 보기.
 - **다국어.** 영어·한국어를 지원하고 macOS 언어 설정을 따릅니다. 언어 추가는 JSON 파일 하나면 됩니다.
 - **프록시 관리.** 프록시 시작·정지, `portless doctor`, `portless prune`, 부팅 시 자동 시작 설치.
@@ -120,6 +122,7 @@ python3 -m portless_manager --lang en list
 |---|---|
 | 상태 | 프로젝트마다 계산한 호스트명을 `~/.portless/routes.json` (`{hostname, port, pid}`) 의 살아 있는 항목과 맞춥니다. `portless list` 에 JSON 출력이 없어 파일을 직접 읽습니다 |
 | 실행 | 프로젝트 폴더에서 인자 없는 `portless` 를 새 세션으로 띄워 SwiftBar 가 끝나도 살아 있게 합니다. 출력은 `~/Library/Logs/portless-manager/<이름>.log` 로 갑니다 |
+| 준비 알림 | 분리된 감시 프로세스가 route 의 포트가 연결을 받을 때까지 최대 60초 기다립니다 (portless 는 앱이 뜨기 전에 route 를 등록합니다). 그 뒤 SwiftBar 알림(`swiftbar://notify`)을 보내고, 클릭하면 페이지가 열립니다. 그 전에 프로세스가 죽으면 알림이 로그를 엽니다. 종료 등 다른 동작의 알림에는 클릭 동작이 없습니다 |
 | 종료 | route 의 pid(portless CLI)에 SIGTERM 을 보내면 portless 가 앱을 끄고 route 를 지웁니다. 8초 뒤에도 살아 있으면 자식 프로세스 그룹까지 SIGKILL 합니다 |
 | 모두 종료 | 설정한 루트 밖의 것까지 살아 있는 route 를 전부 끕니다 |
 

@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import time
 from dataclasses import dataclass
@@ -30,6 +31,7 @@ LAUNCH_DIR = APP_DIR / "launch"
 LOG_DIR = Path.home() / "Library/Logs/portless-manager"
 EXTRA_PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 STOP_WAIT = 8.0
+READY_TIMEOUT = 60.0
 
 
 def env() -> dict:
@@ -47,6 +49,13 @@ def portless_bin() -> str | None:
 def alive(pid: int) -> bool:
     if pid <= 0:
         return False
+    try:
+        # A finished child of this process lingers as a zombie that still answers kill(0);
+        # reap it first. Not our child -> ChildProcessError, fall through.
+        if os.waitpid(pid, os.WNOHANG)[0] == pid:
+            return False
+    except ChildProcessError:
+        pass
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -289,6 +298,45 @@ def stop_all() -> Msg:
         f.unlink(missing_ok=True)
     ok = sum(_terminate(p) for p in pids)
     return msg("result.stopped_all", ok=ok, total=len(pids))
+
+
+def _listening(port: int) -> bool:
+    """True once the app accepts connections. Dev servers may bind IPv4 or IPv6 only."""
+    for host in ("127.0.0.1", "::1"):
+        try:
+            with socket.create_connection((host, port), timeout=0.3):
+                return True
+        except OSError:
+            continue
+    return False
+
+
+READY, FAILED_EARLY, CANCELLED, TIMEOUT = "ready", "failed", "cancelled", "timeout"
+
+
+def wait_ready(t: Target, timeout: float = READY_TIMEOUT, poll: float = 0.5) -> tuple[str, Route | None]:
+    """Wait until a launched target serves requests.
+
+    A route alone isn't enough: portless registers it before the app is listening, so a link
+    opened at that moment lands on an error page. Returns READY once the route's port accepts a
+    connection, FAILED_EARLY if the launch died without a route, CANCELLED if it was stopped,
+    or TIMEOUT.
+    """
+    deadline = time.time() + timeout
+    while True:
+        # Decide from the launch record, not status(): the route appears before the app listens,
+        # so an app that dies in that window would otherwise read as a plain stop.
+        rec = _load_launch(t)
+        if rec is None:                      # stop() clears the record
+            return CANCELLED, None
+        st = status(t, routes())
+        if st.state == RUNNING and st.route and _listening(st.route.port):
+            return READY, st.route
+        if not alive(int(rec.get("pid", 0))):
+            return FAILED_EARLY, None
+        if time.time() >= deadline:
+            return TIMEOUT, st.route
+        time.sleep(poll)
 
 
 def run_portless(*args: str, timeout: float = 60) -> tuple[int, str]:
