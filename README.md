@@ -6,7 +6,7 @@ A macOS menu bar for [portless](https://github.com/vercel-labs/portless) dev ser
 See every portless project on your machine grouped by folder, and start, stop, or open them in one click.
 
 <p align="center">
-  <img src="docs/screenshot-en.png" width="560" alt="portless-manager menu showing projects grouped by folder, with the blog project and its feat/search worktree expanded">
+  <img src="docs/demo-en.gif" width="640" alt="Starting api-server from the menu bar: it shows as starting, a ready notification appears, the menu turns green, and opening its link loads the page">
 </p>
 
 ## Features
@@ -114,10 +114,14 @@ Pull requests with new languages are welcome.
 
 ## Status icons
 
+<p align="center">
+  <img src="docs/screenshot-en.png" width="480" alt="portless-manager menu showing projects grouped by folder, with the blog project and its feat/search worktree expanded">
+</p>
+
 | Icon | Meaning |
 |---|---|
 | 🟢 | Running. portless has a live route for it. |
-| ⏳ | Starting. Launched from the menu, but no route yet. |
+| ⏳ | Starting. Launched from the menu, and the app isn't accepting connections yet. |
 | ⚠️ | Failed. The process exited before registering a route. Check **Log**. |
 | ⚪ | Stopped |
 | ⛔ | Not runnable. No script to run, or a monorepo `apps` config. |

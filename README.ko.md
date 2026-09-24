@@ -6,7 +6,7 @@
 내 장비의 portless 프로젝트를 폴더별로 모아 보고, 클릭 한 번으로 실행·종료·페이지 열기를 합니다.
 
 <p align="center">
-  <img src="docs/screenshot-ko.png" width="560" alt="폴더별로 묶인 프로젝트와, blog 프로젝트 및 feat/search worktree 를 펼친 portless-manager 메뉴">
+  <img src="docs/demo-ko.gif" width="640" alt="메뉴바에서 api-server 를 실행하면 시작 중으로 표시되고, 준비 알림이 온 뒤 초록색으로 바뀌며, 링크를 열면 페이지가 뜬다">
 </p>
 
 ## 기능
@@ -108,10 +108,14 @@ python3 -m portless_manager --lang en list
 
 ## 상태 표시
 
+<p align="center">
+  <img src="docs/screenshot-ko.png" width="480" alt="폴더별로 묶인 프로젝트와, blog 프로젝트 및 feat/search worktree 를 펼친 portless-manager 메뉴">
+</p>
+
 | 표시 | 뜻 |
 |---|---|
 | 🟢 | 실행 중. portless 에 살아 있는 route 가 있습니다 |
-| ⏳ | 시작 중. 메뉴에서 띄웠지만 아직 route 가 없습니다 |
+| ⏳ | 시작 중. 메뉴에서 띄웠고, 앱이 아직 연결을 받지 않습니다 |
 | ⚠️ | 실패. route 를 등록하기 전에 프로세스가 끝났습니다. **로그**를 확인하세요 |
 | ⚪ | 꺼짐 |
 | ⛔ | 실행 불가. 실행할 스크립트가 없거나 모노레포 `apps` 설정입니다 |
