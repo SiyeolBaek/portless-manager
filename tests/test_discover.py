@@ -3,6 +3,7 @@ import os
 import socket
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -104,13 +105,24 @@ class StatusTest(unittest.TestCase):
     def test_transitions(self):
         me = os.getpid()
         self.assertEqual(rt.status(self.t, rt.routes()).state, rt.STOPPED)
-        rt._save_launch(self.t, {"pid": me, "at": 0})
+        rt._save_launch(self.t, {"pid": me, "at": time.time()})
         self.assertEqual(rt.status(self.t, rt.routes()).state, rt.STARTING)
         self.routes([{"hostname": "p.localhost", "port": 4000, "pid": me}])
+        st = rt.status(self.t, rt.routes())
+        self.assertEqual(st.state, rt.STARTING)                  # route exists, app not confirmed yet
+        self.assertIsNotNone(st.route)
+        rt._save_launch(self.t, {**rt._load_launch(self.t), "ready": True})
         self.assertEqual(rt.status(self.t, rt.routes()).state, rt.RUNNING)
         self.routes([])
         rt._save_launch(self.t, {**rt._load_launch(self.t), "pid": 999999})
         self.assertEqual(rt.status(self.t, rt.routes()).state, rt.STOPPED)   # it came up once, so not failed
+
+    def test_external_and_stale_launches_count_as_running(self):
+        me = os.getpid()
+        self.routes([{"hostname": "p.localhost", "port": 4000, "pid": me}])
+        self.assertEqual(rt.status(self.t, rt.routes()).state, rt.RUNNING)   # started outside the menu
+        rt._save_launch(self.t, {"pid": me, "at": 0})                        # watcher long gone
+        self.assertEqual(rt.status(self.t, rt.routes()).state, rt.RUNNING)
 
     def test_failed_when_launcher_died_before_route(self):
         rt._save_launch(self.t, {"pid": 999999, "at": 0})
@@ -138,6 +150,7 @@ class WaitReadyTest(unittest.TestCase):
             outcome, route = rt.wait_ready(self.t, timeout=2, poll=0.05)
         self.assertEqual(outcome, rt.READY)
         self.assertEqual(route.port, port)
+        self.assertEqual(rt.status(self.t, rt.routes()).state, rt.RUNNING)
 
     def test_route_without_listener_times_out(self):
         me = os.getpid()

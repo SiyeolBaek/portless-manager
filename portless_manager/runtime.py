@@ -196,6 +196,12 @@ def status(t: Target, live: list[Route]) -> Status:
         if rec and not rec.get("ran"):     # it came up once, so disappearing later means stopped, not failed
             rec["ran"] = True
             _save_launch(t, rec)
+        # portless registers the route before the app listens. For our own launches, stay ⏳ until
+        # the watcher confirms the port accepts connections, so "open" never lands on an error page.
+        # A launch older than the watcher's timeout counts as up even if the watcher died.
+        if rec and not rec.get("ready") and alive(int(rec.get("pid", 0))) \
+                and time.time() - float(rec.get("at", 0)) < READY_TIMEOUT + 10:
+            return Status(STARTING, route, launched_at=rec.get("at"))
         return Status(RUNNING, route)
     if rec:
         if alive(int(rec.get("pid", 0))):
@@ -330,11 +336,13 @@ def wait_ready(t: Target, timeout: float = READY_TIMEOUT, poll: float = 0.5) -> 
         if rec is None:                      # stop() clears the record
             return CANCELLED, None
         st = status(t, routes())
-        if st.state == RUNNING and st.route and _listening(st.route.port):
+        if st.route and _listening(st.route.port):
+            _save_launch(t, {**rec, "ran": True, "ready": True})
             return READY, st.route
         if not alive(int(rec.get("pid", 0))):
             return FAILED_EARLY, None
         if time.time() >= deadline:
+            _save_launch(t, {**rec, "ready": True})       # stop showing ⏳; the notification says so
             return TIMEOUT, st.route
         time.sleep(poll)
 

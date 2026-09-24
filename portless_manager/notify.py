@@ -38,6 +38,11 @@ def commands(title: str, body: str, *, subtitle: str = "", href: str = "", plain
     ]
 
 
+def refresh_menu() -> None:
+    """Ask SwiftBar to re-run the plugin now instead of on its next 10-second tick."""
+    subprocess.run(["open", "-g", f"swiftbar://refreshplugin?name={PLUGIN}"], capture_output=True, timeout=10)
+
+
 def send(title: str, body: str, **kw) -> str:
     """Post through the first backend that succeeds. Returns the program that delivered it."""
     for c in commands(title, body, **kw):

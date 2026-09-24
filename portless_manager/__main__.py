@@ -47,6 +47,8 @@ def watch(t: Target, title: str) -> None:
     outcome, route = rt.wait_ready(t)
     if outcome == rt.CANCELLED:
         return
+    # Redraw now, so a menu opened right after the notification already shows 🟢 (or ⚠️)
+    notifier.refresh_menu()
     if outcome == rt.FAILED_EARLY:
         # No href: SwiftBar notifications only open web links, so point to the menu instead
         notify(("result.start_failed", {"name": t.name}), title)
